@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+namespace：名称空间
+id：唯一标识
+resultType：返回值类型
+#{id}：从传递过来的参数中取出id值
+
+/* select * from tbl_employee where id = #{id}*/
+last_name lastName 因为数据库表为last_name，bean为lastName，
+所以查询时要起别名，否则报错
+
+ public Employee getEmployeeById(Integer id);
+
+ select id,last_name lastName,email,gender from tbl_employee where id = #{id}
+
+ com.atguigu.mybatis.bean.Employee
+
+-->
+
+<mapper namespace="com.atguigu.mybatis.dao.EmployeeMapperInter">
+
+    <resultMap id="myEmp" type="employee">
+        <id column="id" property="id"/>
+        <result column="last_name" property="lastName"/>
+        <result column="email" property="email"/>
+        <result column="gender" property="gender"/>
+        <!--关联查询一：dept.id-->
+        <!--关联查询二：association
+                //    private Department dept;
+        -->
+        <!--<association property="dept" javaType="com.atguigu.mybatis.bean.Department">
+            这里的<id column=的值不能与上面<id column=的值相同，因为都会找第一个id，所以查询的时候起别名
+            property的值都为id就没关系，因为一个是Department.id，一个是Employee.id
+            <id column="did" property="id"/>
+            <result column="dname" property="dname"/>
+        </association>-->
+
+        <!--
+        select="哪个映射文件下的哪个方法"
+        column="d_id" d_id是 select * from tbl_employee where id = #{id}出来的其中一个值
+        -->
+        <association property="dept"
+                     select="com.atguigu.mybatis.dao.DepartmentMapper.getDeptByStep"
+                     column="d_id">
+
+        </association>
+
+    </resultMap>
+    <select id="getEmployeeById" resultMap="myEmp">
+      select * from tbl_employee where id = #{id}
+      <if test=""></if>
+    </select>
+    <select id="getEmployeeById" resultType="employee">
+      select * from tbl_employee where id = #{id}
+    </select>
+    <select id="getEmployeeById" resultType="employee" databaseId="mysql">
+      select * from tbl_employee where id = #{id}
+    </select>
+    <select id="getEmp" resultType="employee" databaseId="mysql">
+      select * from tbl_employee where id = #{id} and last_name=#{lastName}
+    </select>
+    <select id="getEmpByMap" resultType="employee" databaseId="mysql">
+      select * from tbl_employee where id = #{id} and last_name=#{lastName}
+    </select>
+
+
+    <!--mysql支持自增主键，自增主键的获取，mybatis也是利用statement.getGeneratedKeys()
+        useGeneratedKeys="true":使用自增主键获取主键值策略
+        keyProperty：指定对应的主键属性，也就是mybatis获取到主键值后，将这个值封装到javaBean的哪个属性上
+    -->
+
+    <insert id="addEmp" parameterType="com.atguigu.mybatis.bean.Employee" useGeneratedKeys="true" keyProperty="id" databaseId="mysql">
+      insert into tbl_employee(last_name,email,gender) values (#{lastName},#{email},#{gender})
+    </insert>
+
+    <!--oracle不支持自增，它使用序列来模拟自增
+        每次插入的数据的主键是从序列中拿到的值，如何获取到这个值？
+        select 序列名.nextval from dual;
+    -->
+ <!--   <insert id="addEmp" databaseId="oracle">
+        /*keyProperty: 查询的主键值封装给javaBean的哪个属性
+          order="BEFORE" 当前sql在插入sql之前执行
+          resultType；主键值的返回值类型
+        */
+        <selectKey keyProperty="id" order="BEFORE" resultType="Integer">
+            /* 编写查询主键的sql*/
+            select 序列名.nextval from dual
+        </selectKey>
+        insert into tbl_employee(id,last_name,email,gender) values (#{id},#{lastName},#{email},#{gender})
+
+        <selectKey keyProperty="id" order="AFTER" resultType="Integer">
+            /* 编写查询主键的sql*/
+            select 序列名.currval from dual
+        </selectKey>
+        insert into tbl_employee(id,last_name,email,gender) values (序列名.nextval,#{lastName},#{email},#{gender})
+    </insert>-->
+
+
+
+    <update id="updateEmp">
+        update tbl_employee set last_name=#{lastName},email=#{email} where id=#{id}
+    </update>
+
+    <delete id="deleteEmpById">
+        delete from tbl_employee where id=#{id}
+    </delete>
+
+</mapper>
